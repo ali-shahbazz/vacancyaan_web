@@ -13,7 +13,7 @@
     jobs: ['Jobs', 'Every post, its payment and its applications.'],
     audit: ['Audit log', 'Who changed what, and why.'],
   };
-  const roleNames = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper' };
+  const roleNames = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
   const reasons = { fee_asked: 'Asked the worker for money', salary_lie: 'Salary did not match', shift_changed: 'Shift changed', seat_filled: 'Seat already filled', theek: 'Worker reported a good experience' };
   const jobStates = { ACTIVE: ['Live', 'green'], PENDING_PAYMENT: ['Awaiting payment', 'amber'], PAUSED_PROBATION: ['Hired · probation', 'blue'], CLOSED: ['Closed', ''], EXPIRED: ['Expired', ''] };
   const workerStates = { ACTIVE: ['Available', 'green'], INACTIVE: ['Not seeking', ''], ONBOARDING: ['Onboarding', 'amber'], UNDER_REVIEW: ['Under review', 'amber'], BANNED: ['Suspended', 'red'], DELETED: ['Deleted', ''] };

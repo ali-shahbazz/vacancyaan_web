@@ -22,7 +22,7 @@
       if (!data.job || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Kaam app se naya link kholein.');
       amount = Number(data.amount_pkr);
       returnTarget = data.return_to || '/';
-      const roles = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper' };
+      const roles = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
       $('amount').textContent = amount.toLocaleString('en-PK');
       const venue = document.createElement('span'); venue.dataset.noTranslate = ''; venue.textContent = data.job.brand_name;
       const role = document.createElement('span'); role.textContent = roles[data.job.role] || data.job.role;
