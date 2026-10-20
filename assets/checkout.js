@@ -1,6 +1,10 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const jobId = location.pathname.split('/').filter(Boolean).at(-1);
+  // /checkout/:jobId pays for one job; /checkout/package/:id pays for a batch pack of 3 to 5 roles.
+  const path = location.pathname.split('/').filter(Boolean);
+  const packageId = path.at(-2) === 'package' ? path.at(-1) : null;
+  const jobId = packageId ? null : path.at(-1);
+  const target = packageId ? { package_id: packageId } : { job_id: jobId };
   const params = new URLSearchParams(location.search);
   const token = params.get('token');
   let amount, submitting = false, returnTarget = '/';
@@ -16,16 +20,36 @@
       }
       const query = new URLSearchParams({ token });
       if (requestedReturn) query.set('return_to', requestedReturn);
-      const response = await fetch('/api/payments/checkout/' + encodeURIComponent(jobId) + '?' + query, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
+      const response = await fetch('/api/payments/checkout/' + (packageId ? 'package/' + encodeURIComponent(packageId) : encodeURIComponent(jobId)) + '?' + query, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || data.code) throw new Error(data.code === 'ERR_SESSION_DEAD' ? 'Link purana ho gaya hai. Kaam app mein Adaigi karein par tap kar ke naya link kholein.' : data.sentence || 'Link expire ho gaya hai. Kaam app se naya adaigi link kholein.');
-      if (!data.job || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Kaam app se naya link kholein.');
+      const subject = data.job || data.package;
+      if (!subject || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Kaam app se naya link kholein.');
       amount = Number(data.amount_pkr);
       returnTarget = data.return_to || '/';
       const roles = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
       $('amount').textContent = amount.toLocaleString('en-PK');
-      const venue = document.createElement('span'); venue.dataset.noTranslate = ''; venue.textContent = data.job.brand_name;
-      const role = document.createElement('span'); role.textContent = roles[data.job.role] || data.job.role;
+      const venue = document.createElement('span'); venue.dataset.noTranslate = ''; venue.textContent = subject.brand_name;
+      const role = document.createElement('span');
+      if (data.package) {
+        const count = (data.package.seats || []).length;
+        role.textContent = count + ' roles';
+        $('invoice-kind').textContent = 'Batch pack · ' + count + ' roles';
+        const pay = seat => 'PKR ' + Number(seat.salary_min).toLocaleString('en-PK') + (seat.salary_max ? ' – ' + Number(seat.salary_max).toLocaleString('en-PK') : '+');
+        $('seat-list').replaceChildren(...data.package.seats.map(seat => {
+          const item = document.createElement('li');
+          const name = document.createElement('span'); name.textContent = roles[seat.role] || seat.role;
+          const detail = document.createElement('span'); detail.dataset.noTranslate = ''; detail.textContent = [seat.area_name, pay(seat)].filter(Boolean).join(' · ');
+          item.append(name, detail); return item;
+        }));
+        $('seat-list').hidden = false;
+        $('pack-note').textContent = data.package.credits + ' contacts shared by these roles · live for ' + data.package.visibility_days + ' days';
+        $('pack-note').hidden = false;
+        $('intro-eyebrow').textContent = 'Several roles. One payment.';
+        $('intro-title').textContent = 'Let’s get your roles ready.';
+        $('intro-text').textContent = 'Transfer the pack fee once, then send the transaction ID. Kaam checks the transfer before every role goes live.';
+        $('foot-terms').textContent = 'Workers never pay · One payment for every role in the pack';
+      } else role.textContent = roles[subject.role] || subject.role;
       $('brand').replaceChildren(venue, document.createTextNode(' · '), role);
       for (const [id, value] of [['raast', data.raast_id], ['iban', data.iban]]) { $(id).textContent = value || 'Available nahi'; if (value) $(id).dataset.noTranslate = ''; document.querySelector('[data-copy="' + id + '"]').disabled = !value; }
       $('invoice-state').textContent = 'Awaiting transfer'; $('checkout-fields').hidden = false;
@@ -51,7 +75,7 @@
       if (file) {
         const fileId = [file.name, file.size, file.lastModified].join(':');
         if (!uploads.has(fileId)) {
-          const issued = await fetch('/api/payments/receipt-upload-url', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ job_id: jobId, token, content_type: file.type }), signal: AbortSignal.timeout(15000) });
+          const issued = await fetch('/api/payments/receipt-upload-url', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...target, token, content_type: file.type }), signal: AbortSignal.timeout(15000) });
           const meta = await issued.json(); if (!issued.ok || meta.code) throw new Error(meta.sentence || 'Receipt upload nahi hui. Dobara koshish karein.');
           const put = await fetch(new URL(meta.upload_url).pathname + new URL(meta.upload_url).search, { method: 'PUT', headers: { 'content-type': file.type }, body: file, signal: AbortSignal.timeout(30000) });
           if (!put.ok) throw new Error('Receipt upload nahi hui. Dobara koshish karein.');
@@ -59,7 +83,7 @@
         }
         receiptKey = uploads.get(fileId);
       }
-      const payload = { job_id: jobId, token, transaction_ref: reference, amount_pkr: amount, ...(receiptKey ? { receipt_key: receiptKey } : {}) };
+      const payload = { ...target, token, transaction_ref: reference, amount_pkr: amount, ...(receiptKey ? { receipt_key: receiptKey } : {}) };
       const fingerprint = JSON.stringify(payload); if (!attempts.has(fingerprint)) attempts.set(fingerprint, crypto.randomUUID());
       const response = await fetch('/api/payments/submit-proof', { method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': attempts.get(fingerprint) }, body: fingerprint, signal: AbortSignal.timeout(15000) });
       const data = await response.json(); if (!response.ok || data.code) throw new Error(data.sentence || 'Dobara koshish karein.');
@@ -67,7 +91,7 @@
       // or "job published" page. Only the server's successful write triggers it.
       if (params.get('return_mode') === 'tab' && window.opener) {
         try {
-          window.opener.postMessage({ type: 'kaam-payment-complete', job_id: jobId }, new URL(returnTarget, location.href).origin);
+          window.opener.postMessage({ type: 'kaam-payment-complete', ...target }, new URL(returnTarget, location.href).origin);
           window.opener.focus();
           window.close();
           setTimeout(() => location.replace(returnTarget), 150);

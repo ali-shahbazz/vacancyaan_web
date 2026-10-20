@@ -188,9 +188,13 @@
       const history = node('div', undefined, 'pills');
       history.append(pill(proof.verified_before ? proof.verified_before + ' verified before' : 'First payment', proof.verified_before ? 'green' : 'amber'));
       if (proof.rejected_before) history.append(pill(proof.rejected_before + ' rejected before', 'red'));
-      if (proof.job_status !== 'PENDING_PAYMENT') history.append(pill('Job is ' + (jobStates[proof.job_status]?.[0] || proof.job_status).toLowerCase(), 'red'));
+      const isPack = proof.target_kind === 'PACKAGE';
+      if (proof.job_status !== 'PENDING_PAYMENT') history.append(pill((isPack ? 'Pack is ' : 'Job is ') + (jobStates[proof.job_status]?.[0] || proof.job_status).toLowerCase(), 'red'));
       venue.append(history);
-      const job = node('div'); job.append(node('h3', roleNames[proof.role] || proof.role), data('p', 'PKR ' + money(proof.salary_min) + (proof.salary_max ? ' – ' + money(proof.salary_max) : '+') + ' / month'));
+      const pay = seat => 'PKR ' + money(seat.salary_min) + (seat.salary_max ? ' – ' + money(seat.salary_max) : '+') + ' / month';
+      const job = node('div');
+      if (isPack) job.append(node('h3', 'Batch pack · ' + proof.seat_count + ' roles'), ...(proof.seats || []).map(seat => data('p', (roleNames[seat.role] || seat.role) + ' · ' + pay(seat))));
+      else job.append(node('h3', roleNames[proof.role] || proof.role), data('p', pay(proof)));
       const ref = node('div'); ref.append(data('p', proof.transaction_ref, 'mono'), data('p', 'PKR ' + money(proof.amount_pkr), 'amount'), node('small', 'Submitted ' + when(proof.created_at)));
       const actions = node('div', undefined, 'table-actions');
       if (proof.has_receipt) actions.append(button('Receipt', 'secondary', () => openReceipt(proof), 'Open receipt for ' + proof.brand_name));
@@ -198,9 +202,9 @@
       actions.append(
         button('Verify', 'primary', () => ask({
           title: 'Verify this payment?',
-          body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref + ' · PKR ' + money(proof.amount_pkr)), node('p', 'Only verify after this transfer appears in the bank record. The job goes live and nearby workers are notified.')],
+          body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref + ' · PKR ' + money(proof.amount_pkr)), node('p', isPack ? 'Only verify after this transfer appears in the bank record. Every role in the pack goes live and nearby workers are notified.' : 'Only verify after this transfer appears in the bank record. The job goes live and nearby workers are notified.')],
           confirm: 'Verify and publish',
-          action: async () => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'VERIFIED' }); setStatus('Payment verified. The job is now live.'); loaded.delete('overview'); await loadPayments(); },
+          action: async () => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'VERIFIED' }); setStatus(isPack ? 'Payment verified. Every role in the pack is now live.' : 'Payment verified. The job is now live.'); loaded.delete('overview'); await loadPayments(); },
         }), 'Verify payment for ' + proof.brand_name),
         button('Reject', 'danger', () => ask({
           title: 'Reject this payment?',
