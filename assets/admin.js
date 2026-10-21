@@ -12,6 +12,8 @@
     users: ['People', 'Workers and venues, with their history and controls.'],
     jobs: ['Jobs', 'Every post, its payment and its applications.'],
     organisations: ['Head offices', 'Chains, their branches and their monthly plan.'],
+    operations: ['Hiring health', 'Where paid hiring is stuck and where workers and jobs do not meet.'],
+    wallets: ['Wallets', 'Credits, their ledger and audited corrections.'],
     audit: ['Audit log', 'Who changed what, and why.'],
   };
   const roleNames = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
@@ -133,7 +135,7 @@
   document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => go(el.dataset.view)));
   document.querySelectorAll('[data-refresh]').forEach(el => el.addEventListener('click', () => { loaded.delete(view); load(view); }));
 
-  const loaders = { overview: loadOverview, payments: loadPayments, reports: loadReports, disputes: loadDisputes, users: () => searchUsers(), jobs: () => searchJobs(), organisations: loadOrganisations, audit: () => loadAudit(true) };
+  const loaders = { overview: loadOverview, payments: loadPayments, reports: loadReports, disputes: loadDisputes, users: () => searchUsers(), jobs: () => searchJobs(), organisations: loadOrganisations, operations: loadOperations, wallets: () => searchWallets(), audit: () => loadAudit(true) };
   async function load(name) {
     const version = authVersion; setError('');
     try { await loaders[name](); loaded.add(name); }
@@ -141,7 +143,7 @@
   }
 
   async function loadOverview() {
-    const grid = $('metrics'); grid.replaceChildren(...Array.from({ length: 8 }, () => node('div', undefined, 'ops-skeleton', { 'aria-hidden': 'true' })));
+    const grid = $('metrics'); grid.replaceChildren(...Array.from({ length: 10 }, () => node('div', undefined, 'ops-skeleton', { 'aria-hidden': 'true' })));
     const m = await api('/api/admin/metrics');
     document.querySelectorAll('[data-count]').forEach(el => { const n = Number(m[el.dataset.count] || 0); el.textContent = n; el.hidden = n === 0; });
     const cards = [
@@ -153,6 +155,8 @@
       ['Hires · 30 days', money(m.hires_30d), money(m.verified_venues) + ' venues with verified payment'],
       ['Verified · 30 days', 'PKR ' + money(m.verified_amount_30d), m.payment_review_hours_avg == null ? 'No reviews yet' : 'Average review ' + m.payment_review_hours_avg + ' h'],
       ['Invite acceptance', m.invite_acceptance_pct == null ? '—' : m.invite_acceptance_pct + '%', m.report_hours_avg == null ? 'No resolved reports yet' : 'Reports resolved in ' + m.report_hours_avg + ' h'],
+      ['Paid jobs not hiring', money(m.stalled_paid_jobs), 'Live over 24 h with under 3 contacts', m.stalled_paid_jobs > 0],
+      ['First trial', m.first_trial_hours_median == null ? '—' : m.first_trial_hours_median + ' h', 'Median from going live to a worker coming in'],
     ];
     grid.replaceChildren(...cards.map(([label, value, note, alert]) => {
       const card = node('dl', undefined, 'metric' + (alert ? ' is-alert' : ''));
@@ -163,6 +167,7 @@
       ['reports', 'Fee reports', 'These venues are hidden until reviewed.', m.pending_fee_reports],
       ['reports', 'Other venue reports', 'Salary, shift or seat concerns.', Math.max(0, m.pending_reports - m.pending_fee_reports)],
       ['disputes', 'Contact disputes', 'Refund or reject once the worker has answered or 48 hours pass.', m.open_disputes],
+      ['operations', 'Paid jobs not hiring', 'Live over 24 hours with fewer than 3 workers who agreed to talk.', m.stalled_paid_jobs],
     ].filter(item => item[3] > 0);
     const list = $('attention');
     if (!items.length) { empty(list, 'Nothing is waiting.', 'Queues are clear. New items will appear here.'); return; }
@@ -355,6 +360,77 @@
     }));
   }
   $('job-search-form').addEventListener('submit', event => { event.preventDefault(); load('jobs'); });
+
+  async function loadOperations() {
+    const list = $('stalled-list'); skeleton(list);
+    const ops = await api('/api/admin/ops'); list.removeAttribute('aria-busy');
+    const t = ops.first_trial || {};
+    const summary = $('trial-summary');
+    summary.replaceChildren(t.samples ? data('p', 'First worker came in after ' + t.median + ' h (median) and ' + t.p75 + ' h (75th percentile), across ' + t.samples + ' jobs in the last 60 days.')
+      : node('p', 'No worker has come in for an interview or trial on a job from the last 60 days yet.'));
+    if (!ops.stalled_jobs.length) empty(list, 'Every paid job is hiring.', 'Jobs live for a day with fewer than 3 contacts will appear here.');
+    else list.replaceChildren(...ops.stalled_jobs.map(job => {
+      const row = node('article', undefined, 'ops-row');
+      const what = node('div'); what.append(node('h3', roleNames[job.role] || job.role), data('p', [job.brand_name, job.area_name, job.city].filter(Boolean).join(' · ')));
+      const state = node('div', undefined, 'pills'); state.append(pill(job.contacts + (job.contacts === 1 ? ' contact' : ' contacts'), job.contacts === 0 ? 'red' : 'amber'), pill(job.applications + (job.applications === 1 ? ' application' : ' applications'), ''));
+      const time = node('div'); time.append(node('p', 'Live for ' + job.hours_live + ' h'), node('small', 'Since ' + when(job.activated_at)));
+      const actions = node('div', undefined, 'table-actions');
+      actions.append(button('Venue', 'secondary', () => openUser(job.employer_user_id), 'Open venue for ' + job.brand_name));
+      row.append(what, state, time, actions); return row;
+    }));
+    const rows = $('supply-rows');
+    rows.replaceChildren(...(ops.supply_demand.length ? ops.supply_demand.map(item => {
+      const tr = node('tr'); const short = item.live_jobs > 0 && item.workers < 3 * item.live_jobs;
+      tr.append(data('td', item.city), node('td', roleNames[item.role] || item.role), data('td', money(item.workers)), data('td', money(item.live_jobs)),
+        data('td', item.workers_per_job == null ? '—' : String(item.workers_per_job)));
+      if (short) tr.className = 'is-alert';
+      return tr;
+    }) : [(() => { const tr = node('tr'); const td = node('td', 'No workers or live jobs yet.', undefined, { colspan: '5' }); tr.append(td); return tr; })()]));
+  }
+
+  const walletKinds = { JOB_TICKET: 'Single job', BATCH_PACK: 'Batch pack', RETAINER: 'Monthly plan' };
+  async function searchWallets() {
+    const list = $('wallet-list'); skeleton(list);
+    const query = new URLSearchParams({ q: $('wallet-search').value.trim() });
+    const wallets = (await api('/api/admin/wallets?' + query)).wallets || []; list.removeAttribute('aria-busy');
+    if (!wallets.length) { empty(list, 'No wallets found.', 'Try another name.'); return; }
+    list.replaceChildren(...wallets.map(wallet => {
+      const row = node('article', undefined, 'ops-row');
+      const who = node('div'); who.append(data('h3', wallet.owner_name || 'Unnamed'), node('p', walletKinds[wallet.kind] || wallet.kind));
+      const state = node('div', undefined, 'pills'); state.append(pill(wallet.status.replaceAll('_', ' ').toLowerCase(), wallet.status === 'ACTIVE' ? 'green' : wallet.status === 'PENDING_PAYMENT' ? 'amber' : ''));
+      const numbers = node('div'); numbers.append(node('p', money(wallet.available) + ' available · ' + money(wallet.held) + ' held · ' + money(wallet.spent) + ' used'), node('small', wallet.jobs + (wallet.jobs === 1 ? ' job' : ' jobs') + ' · since ' + when(wallet.created_at)));
+      const actions = node('div', undefined, 'table-actions');
+      actions.append(button('Ledger', 'secondary', () => openWallet(wallet), 'Open the ledger for ' + (wallet.owner_name || 'wallet')));
+      row.append(who, state, numbers, actions); return row;
+    }));
+  }
+  $('wallet-search-form').addEventListener('submit', event => { event.preventDefault(); load('wallets'); });
+
+  async function openWallet(wallet) {
+    $('detail-title').textContent = wallet.owner_name || 'Wallet'; $('detail-body').replaceChildren(node('div', undefined, 'ops-skeleton', { 'aria-hidden': 'true' })); $('detail-dialog').showModal();
+    try {
+      const detail = await api('/api/admin/wallets/' + encodeURIComponent(wallet.id) + '/ledger');
+      const facts = node('dl', undefined, 'detail-facts');
+      for (const [label, value] of [['Plan', walletKinds[detail.wallet.kind]], ['Available', money(detail.wallet.available)], ['Held for invites', money(detail.wallet.held)], ['Used', money(detail.wallet.spent)]]) facts.append(node('dt', label), data('dd', value));
+      const actions = node('div', undefined, 'detail-actions');
+      actions.append(button('Correct credits', 'secondary', async () => {
+        const amount = node('input', undefined, undefined, { type: 'number', min: '-1000', max: '1000', step: '1', 'aria-label': 'Credits to add (negative to remove)' });
+        const field = node('label', undefined, 'field'); field.append(node('span', 'Credits to add (negative to remove)'), amount);
+        await ask({ title: 'Correct this wallet?', body: [field, node('p', 'The change and your reason are written to the ledger and the audit log. A wallet never goes below zero.')], confirm: 'Save correction', reason: true, reasonLabel: 'Why (at least 5 characters)',
+          action: async text => {
+            const delta = Number(amount.value);
+            if (!Number.isInteger(delta) || delta === 0) throw new Error('Enter a whole number of credits other than 0.');
+            await api('/api/admin/wallets/' + encodeURIComponent(wallet.id) + '/adjust', { delta, reason: text });
+            setStatus('Wallet corrected.'); loaded.delete('wallets'); await openWallet(wallet);
+          } });
+      }, 'Correct credits for ' + (wallet.owner_name || 'wallet')));
+      const box = node('section', undefined, 'detail-section'); const ul = node('ul');
+      const signed = n => (n > 0 ? '+' : '') + n;
+      detail.entries.forEach(entry => ul.append(data('li', [when(entry.created_at), entry.entry_type, signed(entry.available_delta) + ' available', entry.held_delta ? signed(entry.held_delta) + ' held' : '', entry.role ? roleNames[entry.role] || entry.role : '', entry.reason || ''].filter(Boolean).join(' · '))));
+      box.append(node('h3', 'Ledger (newest first)'), detail.entries.length ? ul : node('p', 'No entries yet.'));
+      $('detail-body').replaceChildren(facts, actions, box);
+    } catch (error) { $('detail-body').replaceChildren(node('p', errorText(error), 'form-error')); }
+  }
 
   const retainerStates = { ACTIVE: ['Monthly plan live', 'green'], PENDING_PAYMENT: ['Awaiting first payment', 'amber'], LAPSED: ['Plan lapsed', 'red'] };
   async function loadOrganisations() {
