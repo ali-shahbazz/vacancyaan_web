@@ -11,6 +11,7 @@
     disputes: ['Contact disputes', 'Employers who could not reach a consenting worker.'],
     users: ['People', 'Workers and venues, with their history and controls.'],
     jobs: ['Jobs', 'Every post, its payment and its applications.'],
+    organisations: ['Head offices', 'Chains, their branches and their monthly plan.'],
     audit: ['Audit log', 'Who changed what, and why.'],
   };
   const roleNames = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
@@ -132,7 +133,7 @@
   document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => go(el.dataset.view)));
   document.querySelectorAll('[data-refresh]').forEach(el => el.addEventListener('click', () => { loaded.delete(view); load(view); }));
 
-  const loaders = { overview: loadOverview, payments: loadPayments, reports: loadReports, disputes: loadDisputes, users: () => searchUsers(), jobs: () => searchJobs(), audit: () => loadAudit(true) };
+  const loaders = { overview: loadOverview, payments: loadPayments, reports: loadReports, disputes: loadDisputes, users: () => searchUsers(), jobs: () => searchJobs(), organisations: loadOrganisations, audit: () => loadAudit(true) };
   async function load(name) {
     const version = authVersion; setError('');
     try { await loaders[name](); loaded.add(name); }
@@ -188,12 +189,13 @@
       const history = node('div', undefined, 'pills');
       history.append(pill(proof.verified_before ? proof.verified_before + ' verified before' : 'First payment', proof.verified_before ? 'green' : 'amber'));
       if (proof.rejected_before) history.append(pill(proof.rejected_before + ' rejected before', 'red'));
-      const isPack = proof.target_kind === 'PACKAGE';
-      if (proof.job_status !== 'PENDING_PAYMENT') history.append(pill((isPack ? 'Pack is ' : 'Job is ') + (jobStates[proof.job_status]?.[0] || proof.job_status).toLowerCase(), 'red'));
+      const isPack = proof.target_kind === 'PACKAGE', isInvoice = proof.target_kind === 'INVOICE';
+      if (proof.job_status !== 'PENDING_PAYMENT') history.append(pill(isInvoice ? 'Invoice is no longer open' : (isPack ? 'Pack is ' : 'Job is ') + (jobStates[proof.job_status]?.[0] || proof.job_status).toLowerCase(), 'red'));
       venue.append(history);
       const pay = seat => 'PKR ' + money(seat.salary_min) + (seat.salary_max ? ' – ' + money(seat.salary_max) : '+') + ' / month';
       const job = node('div');
-      if (isPack) job.append(node('h3', 'Batch pack · ' + proof.seat_count + ' roles'), ...(proof.seats || []).map(seat => data('p', (roleNames[seat.role] || seat.role) + ' · ' + pay(seat))));
+      if (isInvoice) job.append(node('h3', 'Monthly plan · ' + proof.organisation_name), data('p', proof.invoice_credits + ' contacts for ' + proof.invoice_period_days + ' days, shared by every branch'));
+      else if (isPack) job.append(node('h3', 'Batch pack · ' + proof.seat_count + ' roles'), ...(proof.seats || []).map(seat => data('p', (roleNames[seat.role] || seat.role) + ' · ' + pay(seat))));
       else job.append(node('h3', roleNames[proof.role] || proof.role), data('p', pay(proof)));
       const ref = node('div'); ref.append(data('p', proof.transaction_ref, 'mono'), data('p', 'PKR ' + money(proof.amount_pkr), 'amount'), node('small', 'Submitted ' + when(proof.created_at)));
       const actions = node('div', undefined, 'table-actions');
@@ -202,15 +204,15 @@
       actions.append(
         button('Verify', 'primary', () => ask({
           title: 'Verify this payment?',
-          body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref + ' · PKR ' + money(proof.amount_pkr)), node('p', isPack ? 'Only verify after this transfer appears in the bank record. Every role in the pack goes live and nearby workers are notified.' : 'Only verify after this transfer appears in the bank record. The job goes live and nearby workers are notified.')],
-          confirm: 'Verify and publish',
-          action: async () => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'VERIFIED' }); setStatus(isPack ? 'Payment verified. Every role in the pack is now live.' : 'Payment verified. The job is now live.'); loaded.delete('overview'); await loadPayments(); },
+          body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref + ' · PKR ' + money(proof.amount_pkr)), node('p', isInvoice ? 'Only verify after this transfer appears in the bank record. The monthly plan starts now, or right after the current month.' : isPack ? 'Only verify after this transfer appears in the bank record. Every role in the pack goes live and nearby workers are notified.' : 'Only verify after this transfer appears in the bank record. The job goes live and nearby workers are notified.')],
+          confirm: isInvoice ? 'Verify payment' : 'Verify and publish',
+          action: async () => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'VERIFIED' }); setStatus(isInvoice ? 'Payment verified. The monthly plan is paid.' : isPack ? 'Payment verified. Every role in the pack is now live.' : 'Payment verified. The job is now live.'); loaded.delete('overview'); loaded.delete('organisations'); await loadPayments(); },
         }), 'Verify payment for ' + proof.brand_name),
         button('Reject', 'danger', () => ask({
           title: 'Reject this payment?',
           body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref), node('p', 'The job stays unpublished. The employer sees your reason and can submit a corrected transfer.')],
           confirm: 'Reject payment', danger: true, reason: true, reasonLabel: 'Reason shown to the employer',
-          action: async text => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'REJECTED', reason: text }); setStatus('Payment rejected. The employer has been told why.'); loaded.delete('overview'); await loadPayments(); },
+          action: async text => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'REJECTED', reason: text }); setStatus('Payment rejected. The employer has been told why.'); loaded.delete('overview'); loaded.delete('organisations'); await loadPayments(); },
         }), 'Reject payment for ' + proof.brand_name),
       );
       row.append(venue, job, ref, actions); return row;
@@ -353,6 +355,35 @@
     }));
   }
   $('job-search-form').addEventListener('submit', event => { event.preventDefault(); load('jobs'); });
+
+  const retainerStates = { ACTIVE: ['Monthly plan live', 'green'], PENDING_PAYMENT: ['Awaiting first payment', 'amber'], LAPSED: ['Plan lapsed', 'red'] };
+  async function loadOrganisations() {
+    const list = $('organisation-list'); skeleton(list);
+    const organisations = (await api('/api/admin/organisations')).organisations || []; list.removeAttribute('aria-busy');
+    if (!organisations.length) { empty(list, 'No head offices yet.', 'An owner sets one up from their venue profile in the app.'); return; }
+    list.replaceChildren(...organisations.map(org => {
+      const row = node('article', undefined, 'ops-row');
+      const who = node('div'); who.append(data('h3', org.name), data('p', org.owner_phone + ' · ' + org.branches + (org.branches === 1 ? ' branch · ' : ' branches · ') + org.live_jobs + (org.live_jobs === 1 ? ' live job' : ' live jobs'), 'mono'));
+      const state = node('div', undefined, 'pills');
+      const [label, tone] = retainerStates[org.retainer_status] || ['Pays per job', ''];
+      state.append(pill(label, tone));
+      if (org.open_invoice) state.append(pill('Invoice open · PKR ' + money(org.open_invoice.price_pkr), 'amber'));
+      if (org.queued_months) state.append(pill(org.queued_months + ' month paid ahead', 'blue'));
+      const numbers = node('div');
+      if (org.retainer_status === 'ACTIVE') numbers.append(node('p', money(org.available) + ' contacts left · ' + money(org.held) + ' waiting'), node('small', 'Month ends ' + when(org.period_ends_at)));
+      else numbers.append(node('small', 'Set up ' + when(org.created_at)));
+      const actions = node('div', undefined, 'table-actions');
+      if (org.open_invoice) actions.append(button('Cancel invoice', 'danger', () => ask({
+        title: 'Cancel this invoice?', body: 'The head office can no longer pay it. You can issue a new one.', confirm: 'Cancel invoice', danger: true,
+        action: async () => { await api('/api/admin/invoices/' + org.open_invoice.id + '/cancel', {}); setStatus('Invoice cancelled.'); await loadOrganisations(); },
+      }), 'Cancel the open invoice for ' + org.name));
+      else actions.append(button('Issue monthly invoice', 'primary', () => ask({
+        title: 'Issue a monthly invoice?', body: org.name + ' pays it from Head office in the app. Once you verify the transfer, the month starts (or follows the current one).', confirm: 'Issue invoice',
+        action: async () => { await api('/api/admin/organisations/' + org.id + '/invoices', {}); setStatus('Invoice issued. The head office has been notified.'); await loadOrganisations(); },
+      }), 'Issue a monthly invoice for ' + org.name));
+      row.append(who, state, numbers, actions); return row;
+    }));
+  }
 
   async function loadAudit(reset) {
     const list = $('audit-list');

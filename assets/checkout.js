@@ -2,9 +2,10 @@
   const $ = id => document.getElementById(id);
   // /checkout/:jobId pays for one job; /checkout/package/:id pays for a batch pack of 3 to 5 roles.
   const path = location.pathname.split('/').filter(Boolean);
-  const packageId = path.at(-2) === 'package' ? path.at(-1) : null;
-  const jobId = packageId ? null : path.at(-1);
-  const target = packageId ? { package_id: packageId } : { job_id: jobId };
+  // /checkout/invoice/:id pays a head office's monthly plan.
+  const kind = ['package', 'invoice'].includes(path.at(-2)) ? path.at(-2) : 'job';
+  const targetId = path.at(-1);
+  const target = { [kind + '_id']: targetId };
   const params = new URLSearchParams(location.search);
   const token = params.get('token');
   let amount, submitting = false, returnTarget = '/';
@@ -20,10 +21,10 @@
       }
       const query = new URLSearchParams({ token });
       if (requestedReturn) query.set('return_to', requestedReturn);
-      const response = await fetch('/api/payments/checkout/' + (packageId ? 'package/' + encodeURIComponent(packageId) : encodeURIComponent(jobId)) + '?' + query, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
+      const response = await fetch('/api/payments/checkout/' + (kind === 'job' ? '' : kind + '/') + encodeURIComponent(targetId) + '?' + query, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || data.code) throw new Error(data.code === 'ERR_SESSION_DEAD' ? 'Link purana ho gaya hai. Kaam app mein Adaigi karein par tap kar ke naya link kholein.' : data.sentence || 'Link expire ho gaya hai. Kaam app se naya adaigi link kholein.');
-      const subject = data.job || data.package;
+      const subject = data.job || data.package || data.invoice;
       if (!subject || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Kaam app se naya link kholein.');
       amount = Number(data.amount_pkr);
       returnTarget = data.return_to || '/';
@@ -49,6 +50,15 @@
         $('intro-title').textContent = 'Let’s get your roles ready.';
         $('intro-text').textContent = 'Transfer the pack fee once, then send the transaction ID. Kaam checks the transfer before every role goes live.';
         $('foot-terms').textContent = 'Workers never pay · One payment for every role in the pack';
+      } else if (data.invoice) {
+        role.textContent = 'Monthly plan';
+        $('invoice-kind').textContent = 'Monthly plan · ' + data.invoice.period_days + ' days';
+        $('pack-note').textContent = data.invoice.credits + ' contacts shared by every branch · unused contacts end with the month';
+        $('pack-note').hidden = false;
+        $('intro-eyebrow').textContent = 'Every branch. One plan.';
+        $('intro-title').textContent = 'Let’s start your month.';
+        $('intro-text').textContent = 'Transfer the monthly fee, then send the transaction ID. Kaam checks the transfer before the month starts.';
+        $('foot-terms').textContent = 'Workers never pay · One payment covers every branch this month';
       } else role.textContent = roles[subject.role] || subject.role;
       $('brand').replaceChildren(venue, document.createTextNode(' · '), role);
       for (const [id, value] of [['raast', data.raast_id], ['iban', data.iban]]) { $(id).textContent = value || 'Available nahi'; if (value) $(id).dataset.noTranslate = ''; document.querySelector('[data-copy="' + id + '"]').disabled = !value; }
