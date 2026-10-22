@@ -56,7 +56,8 @@
     const option = document.createElement('option'); option.value = id; option.textContent = name; select.append(option);
   }
   select.value = language; select.disabled = true; chooser.append(icon, select);
-  const header = document.querySelector('.checkout-header,.workspace-topbar,.site-header .container,.site-header');
+  const header = document.querySelector('.site-header .header-inner') || document.querySelector('.checkout-header')
+    || document.querySelector('.workspace-topbar');
   (header || document.body).append(chooser);
   let titleSource = document.title, translatedTitle = '';
   function updateTitle() {

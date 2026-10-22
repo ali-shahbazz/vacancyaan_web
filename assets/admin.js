@@ -4,17 +4,18 @@
   let token = '', refreshToken = '', renewal = null, authVersion = 0, otpSent = false, busy = false, view = 'overview';
   let proofs = [], auditPage = 0;
   const loaded = new Set();
+  // One title per view, and only the rule an operator needs while working it.
   const views = {
-    overview: ['Operations overview', 'What needs attention today, from live records.'],
-    payments: ['Payment reviews', 'Match each transfer to the bank record before a job goes live.'],
-    reports: ['Venue reports', 'Worker concerns about venues, fee requests first.'],
-    disputes: ['Contact disputes', 'Employers who could not reach a consenting worker.'],
-    users: ['People', 'Workers and venues, with their history and controls.'],
-    jobs: ['Jobs', 'Every post, its payment and its applications.'],
-    organisations: ['Head offices', 'Chains, their branches and their monthly plan.'],
-    operations: ['Hiring health', 'Where paid hiring is stuck and where workers and jobs do not meet.'],
-    wallets: ['Wallets', 'Credits, their ledger and audited corrections.'],
-    audit: ['Audit log', 'Who changed what, and why.'],
+    overview: ['Overview', ''],
+    payments: ['Payments', 'Verify only after the transfer appears in the bank record. Verifying publishes the job.'],
+    reports: ['Venue reports', 'Fee reports hide a venue at once, so they come first. Dismissing the last open fee report shows the venue again.'],
+    disputes: ['Disputes', 'Employers who could not reach a consenting worker. A silent worker after 48 hours means a refund.'],
+    users: ['People', ''],
+    jobs: ['Jobs', ''],
+    organisations: ['Head offices', 'Chains on the monthly plan. Issue each month’s invoice; it is paid and verified like any other transfer.'],
+    operations: ['Hiring health', ''],
+    wallets: ['Wallets', 'Every job ticket, pack and monthly plan. Open one to read its ledger or make an audited correction.'],
+    audit: ['Audit log', ''],
   };
   const roleNames = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
   const reasons = { fee_asked: 'Asked the worker for money', salary_lie: 'Salary did not match', shift_changed: 'Shift changed', seat_filled: 'Seat already filled', theek: 'Worker reported a good experience' };
@@ -22,8 +23,6 @@
   const workerStates = { ACTIVE: ['Available', 'green'], INACTIVE: ['Not seeking', ''], ONBOARDING: ['Onboarding', 'amber'], UNDER_REVIEW: ['Under review', 'amber'], BANNED: ['Suspended', 'red'], DELETED: ['Deleted', ''] };
   const money = value => Number(value || 0).toLocaleString('en-PK');
   const when = value => value && !Number.isNaN(Date.parse(value)) ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Karachi' }).format(new Date(value)) : '—';
-  $('today').dataset.localizedDate = new Date().toISOString();
-  $('today').textContent = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'Asia/Karachi' }).format(new Date());
 
   function node(tag, text, className, attributes = {}) {
     const el = document.createElement(tag);
@@ -35,8 +34,8 @@
   // Names, venues, references and phones are user data and must never be translated.
   const data = (tag, text, className) => { const el = node(tag, text, className); el.dataset.noTranslate = ''; return el; };
   const pill = (text, tone = '') => node('span', text, 'pill' + (tone ? ' pill-' + tone : ''));
-  function button(label, kind, onClick, aria) {
-    const el = node('button', label, 'button ops-button ' + (kind === 'primary' ? 'button-primary' : kind === 'danger' ? 'button-danger' : 'button-secondary'), { type: 'button' });
+  function button(label, kind, onClick, aria, extraClass) {
+    const el = node('button', label, 'button ops-button ' + (kind === 'primary' ? 'button-primary' : kind === 'danger' ? 'button-danger' : 'button-secondary') + (extraClass ? ' ' + extraClass : ''), { type: 'button' });
     if (aria) el.setAttribute('aria-label', aria);
     el.addEventListener('click', onClick);
     return el;
@@ -51,7 +50,7 @@
   function remember() { try { refreshToken ? sessionStorage.setItem(STORE_KEY, refreshToken) : sessionStorage.removeItem(STORE_KEY); } catch { /* Private mode: the session simply ends on reload. */ } }
   function signedOut() {
     authVersion++; token = ''; refreshToken = ''; renewal = null; proofs = []; loaded.clear(); remember();
-    $('account-label').textContent = 'Admin access'; $('logout').hidden = $('mobile-logout').hidden = true;
+    $('logout').hidden = $('mobile-logout').hidden = true;
     document.querySelectorAll('[data-count]').forEach(el => { el.hidden = true; });
     render();
   }
@@ -122,9 +121,11 @@
   function render() {
     const signedIn = Boolean(token);
     document.querySelectorAll('[data-view]').forEach(el => { if (el.dataset.view === view) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); });
-    $('view-title').textContent = views[view][0]; $('view-subtitle').textContent = views[view][1];
-    $('breadcrumb-label').textContent = views[view][0];
-    document.title = 'Kaam operations — ' + views[view][0];
+    const [title, rule] = signedIn ? views[view] : ['Sign in to operations', 'Use the registered admin phone number and password. A code confirms it is you.'];
+    $('view-title').textContent = title; $('view-subtitle').textContent = rule; $('view-subtitle').hidden = !rule;
+    $('title-actions').hidden = !signedIn; $('resolve-silent').hidden = view !== 'disputes';
+    document.querySelector('.workspace-sidebar .sidebar-nav').hidden = !signedIn;
+    document.title = 'Kaam operations — ' + title;
     $('signin-panel').hidden = signedIn; $('workspace-views').hidden = !signedIn;
     document.querySelectorAll('[data-panel]').forEach(el => { el.hidden = el.dataset.panel !== view; });
   }
@@ -168,13 +169,20 @@
       ['reports', 'Other venue reports', 'Salary, shift or seat concerns.', Math.max(0, m.pending_reports - m.pending_fee_reports)],
       ['disputes', 'Contact disputes', 'Refund or reject once the worker has answered or 48 hours pass.', m.open_disputes],
       ['operations', 'Paid jobs not hiring', 'Live over 24 hours with fewer than 3 workers who agreed to talk.', m.stalled_paid_jobs],
+      ['users:UNDER_REVIEW', 'Workers under review', 'An employer reported them for asking for money. Reinstate or suspend.', m.workers_under_review],
     ].filter(item => item[3] > 0);
     const list = $('attention');
     if (!items.length) { empty(list, 'Nothing is waiting.', 'Queues are clear. New items will appear here.'); return; }
     list.replaceChildren(...items.map(([target, title, note, count]) => {
       const row = node('button', undefined, 'attention-item', { type: 'button' });
       const text = node('div'); text.append(node('strong', title), node('span', note));
-      row.append(text, data('span', money(count), 'count')); row.addEventListener('click', () => go(target)); return row;
+      row.append(text, data('span', money(count), 'count'));
+      row.addEventListener('click', () => {
+        const [view, status] = target.split(':');
+        if (status) { userStatus = status; $('user-search').value = ''; loaded.delete('users'); }
+        go(view);
+      });
+      return row;
     }));
   }
 
@@ -196,6 +204,8 @@
       if (proof.rejected_before) history.append(pill(proof.rejected_before + ' rejected before', 'red'));
       const isPack = proof.target_kind === 'PACKAGE', isInvoice = proof.target_kind === 'INVOICE';
       if (proof.job_status !== 'PENDING_PAYMENT') history.append(pill(isInvoice ? 'Invoice is no longer open' : (isPack ? 'Pack is ' : 'Job is ') + (jobStates[proof.job_status]?.[0] || proof.job_status).toLowerCase(), 'red'));
+      // A venue hidden after a worker report: review the report before publishing anything for it.
+      if (proof.hidden_at) history.append(pill('Venue hidden by a worker report', 'red'));
       venue.append(history);
       const pay = seat => 'PKR ' + money(seat.salary_min) + (seat.salary_max ? ' – ' + money(seat.salary_max) : '+') + ' / month';
       const job = node('div');
@@ -204,21 +214,23 @@
       else job.append(node('h3', roleNames[proof.role] || proof.role), data('p', pay(proof)));
       const ref = node('div'); ref.append(data('p', proof.transaction_ref, 'mono'), data('p', 'PKR ' + money(proof.amount_pkr), 'amount'), node('small', 'Submitted ' + when(proof.created_at)));
       const actions = node('div', undefined, 'table-actions');
-      if (proof.has_receipt) actions.append(button('Receipt', 'secondary', () => openReceipt(proof), 'Open receipt for ' + proof.brand_name));
-      if (proof.google_maps_url) { const map = node('a', 'Map', 'button button-secondary ops-button', { href: proof.google_maps_url, target: '_blank', rel: 'noopener noreferrer' }); actions.append(map); }
+      // Each button has its own column (admin.css, .ops-list slots), so a row without a receipt or map
+      // keeps Verify and Reject in the same place as every other row.
+      if (proof.has_receipt) { const receipt = button('Receipt', 'secondary', () => openReceipt(proof), 'Open receipt for ' + proof.brand_name); receipt.classList.add('slot-receipt'); actions.append(receipt); }
+      if (proof.google_maps_url) { const map = node('a', 'Map', 'button button-secondary ops-button slot-map', { href: proof.google_maps_url, target: '_blank', rel: 'noopener noreferrer' }); actions.append(map); }
       actions.append(
         button('Verify', 'primary', () => ask({
           title: 'Verify this payment?',
           body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref + ' · PKR ' + money(proof.amount_pkr)), node('p', isInvoice ? 'Only verify after this transfer appears in the bank record. The monthly plan starts now, or right after the current month.' : isPack ? 'Only verify after this transfer appears in the bank record. Every role in the pack goes live and nearby workers are notified.' : 'Only verify after this transfer appears in the bank record. The job goes live and nearby workers are notified.')],
           confirm: isInvoice ? 'Verify payment' : 'Verify and publish',
           action: async () => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'VERIFIED' }); setStatus(isInvoice ? 'Payment verified. The monthly plan is paid.' : isPack ? 'Payment verified. Every role in the pack is now live.' : 'Payment verified. The job is now live.'); loaded.delete('overview'); loaded.delete('organisations'); await loadPayments(); },
-        }), 'Verify payment for ' + proof.brand_name),
+        }), 'Verify payment for ' + proof.brand_name, 'slot-verify'),
         button('Reject', 'danger', () => ask({
           title: 'Reject this payment?',
           body: [data('p', proof.brand_name + ' · ' + proof.transaction_ref), node('p', 'The job stays unpublished. The employer sees your reason and can submit a corrected transfer.')],
           confirm: 'Reject payment', danger: true, reason: true, reasonLabel: 'Reason shown to the employer',
           action: async text => { await api('/api/admin/verify-payment', { proof_id: proof.id, decision: 'REJECTED', reason: text }); setStatus('Payment rejected. The employer has been told why.'); loaded.delete('overview'); loaded.delete('organisations'); await loadPayments(); },
-        }), 'Reject payment for ' + proof.brand_name),
+        }), 'Reject payment for ' + proof.brand_name, 'slot-reject'),
       );
       row.append(venue, job, ref, actions); return row;
     }));
@@ -281,24 +293,29 @@
     action: async () => { const result = await api('/api/admin/disputes/resolve-silent', {}); setStatus(result.refunded + ' disputes refunded.'); loaded.delete('overview'); await loadDisputes(); },
   }));
 
+  // A worker-status filter the overview sets (for example everyone under review); a new search clears it.
+  let userStatus = '';
   async function searchUsers() {
     const list = $('user-list'); skeleton(list);
-    const result = await api('/api/admin/users?q=' + encodeURIComponent($('user-search').value.trim())); list.removeAttribute('aria-busy');
+    const query = new URLSearchParams({ q: $('user-search').value.trim() });
+    if (userStatus) query.set('status', userStatus);
+    const result = await api('/api/admin/users?' + query); list.removeAttribute('aria-busy');
     const users = result.users || [];
-    if (!users.length) { empty(list, 'Nobody found.', 'Search by worker name, venue, business or at least 4 phone digits.'); return; }
+    setStatus(userStatus ? 'Showing workers who are ' + userStatus.replaceAll('_', ' ').toLowerCase() + '. Search to see everyone.' : '');
+    if (!users.length) { empty(list, 'Nobody found.', userStatus ? 'No worker is ' + userStatus.replaceAll('_', ' ').toLowerCase() + ' right now.' : 'Search by worker name, venue, business or at least 4 phone digits.'); return; }
     list.replaceChildren(...users.map(user => {
       const row = node('article', undefined, 'ops-row');
       const who = node('div'); who.append(data('h3', user.full_name || user.brand_name || 'Account'), data('p', user.phone_e164 || 'Deleted account', 'mono'));
       const roles = node('div', undefined, 'pills');
       if (user.candidate_id) { const [label, tone] = workerStates[user.candidate_status] || [user.candidate_status, '']; roles.append(pill('Worker · ' + label, tone)); }
       if (user.employer_id) roles.append(pill('Venue · ' + (user.hidden_at ? 'hidden' : user.is_verified ? 'payment verified' : 'no verified payment'), user.hidden_at ? 'red' : user.is_verified ? 'green' : ''));
-      if (user.venue_reports) roles.append(pill(user.venue_reports + ' reports', 'amber'));
+      if (user.venue_reports) roles.append(pill(user.venue_reports + (user.venue_reports === 1 ? ' report' : ' reports'), 'amber'));
       const venue = node('div'); if (user.brand_name) venue.append(data('p', [user.brand_name, user.business_name].filter(Boolean).join(' · '))); venue.append(node('small', 'Joined ' + when(user.created_at)));
       const actions = node('div', undefined, 'table-actions'); actions.append(button('Open', 'secondary', () => openUser(user.id), 'Open ' + (user.full_name || user.brand_name || 'account')));
       row.append(who, roles, venue, actions); return row;
     }));
   }
-  $('user-search-form').addEventListener('submit', event => { event.preventDefault(); load('users'); });
+  $('user-search-form').addEventListener('submit', event => { event.preventDefault(); userStatus = ''; load('users'); });
 
   async function openUser(id) {
     $('detail-title').textContent = 'Account'; $('detail-body').replaceChildren(node('div', undefined, 'ops-skeleton', { 'aria-hidden': 'true' })); $('detail-dialog').showModal();
@@ -349,7 +366,7 @@
       const state = node('div', undefined, 'pills'); state.append(pill(label, tone));
       if (job.payment_status) state.append(pill('Payment ' + job.payment_status.toLowerCase(), job.payment_status === 'VERIFIED' ? 'green' : job.payment_status === 'PENDING' ? 'amber' : 'red'));
       if (job.hidden_at) state.append(pill('Venue hidden', 'red'));
-      const numbers = node('div'); numbers.append(node('p', job.applications + ' applications · ' + job.unlocks_used + '/' + job.max_unlocks + ' contacts'), node('small', 'Posted ' + when(job.created_at)));
+      const numbers = node('div'); numbers.append(node('p', job.applications + (job.applications === 1 ? ' application · ' : ' applications · ') + job.unlocks_used + '/' + job.max_unlocks + ' contacts'), node('small', 'Posted ' + when(job.created_at)));
       const actions = node('div', undefined, 'table-actions');
       actions.append(button('Venue', 'secondary', () => openUser(job.employer_user_id), 'Open venue for ' + job.brand_name));
       if (['ACTIVE', 'PENDING_PAYMENT'].includes(job.status)) actions.append(button('Close', 'danger', () => ask({
@@ -444,7 +461,7 @@
       const [label, tone] = retainerStates[org.retainer_status] || ['Pays per job', ''];
       state.append(pill(label, tone));
       if (org.open_invoice) state.append(pill('Invoice open · PKR ' + money(org.open_invoice.price_pkr), 'amber'));
-      if (org.queued_months) state.append(pill(org.queued_months + ' month paid ahead', 'blue'));
+      if (org.queued_months) state.append(pill(org.queued_months + (org.queued_months === 1 ? ' month paid ahead' : ' months paid ahead'), 'blue'));
       const numbers = node('div');
       if (org.retainer_status === 'ACTIVE') numbers.append(node('p', money(org.available) + ' contacts left · ' + money(org.held) + ' waiting'), node('small', 'Month ends ' + when(org.period_ends_at)));
       else numbers.append(node('small', 'Set up ' + when(org.created_at)));
@@ -498,7 +515,7 @@
     $('code').focus();
   }
   function enter() {
-    $('account-label').textContent = 'Admin workspace'; $('logout').hidden = $('mobile-logout').hidden = false; $('login-status').textContent = '';
+    $('logout').hidden = $('mobile-logout').hidden = false; $('login-status').textContent = '';
     render(); load('overview'); if (view !== 'overview') load(view);
   }
   $('login-form').addEventListener('submit', async event => {

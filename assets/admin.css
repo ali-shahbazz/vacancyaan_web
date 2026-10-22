@@ -4,7 +4,8 @@
 .ops-button .icon{width:18px;height:18px}
 .button-danger.ops-button:hover{background:var(--ops-red-soft)}
 .nav-count{margin-inline-start:auto;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--lime);color:var(--green);font-size:11px;font-weight:700;text-align:center}
-.select-field select,.field textarea{width:100%;min-height:44px;border:1px solid #dbe2d5;border-radius:9px;background:#fdfefb;padding:9px 12px;font:inherit;font-size:14px;color:var(--ink)}
+.select-field select,.field textarea{width:100%;min-height:44px;border:1px solid #dbe2d5;border-radius:9px;background-color:#fdfefb;padding-block:9px;padding-inline-start:12px;font:inherit;font-size:14px;color:var(--ink)}
+.field textarea{padding-inline-end:12px}
 .field textarea{resize:vertical;min-height:88px}
 select:focus-visible,textarea:focus-visible{outline:3px solid #91b766;outline-offset:2px}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -32,7 +33,29 @@ select:focus-visible,textarea:focus-visible{outline:3px solid #91b766;outline-of
 .ops-row .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
 .ops-row .amount{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink)}
 .ops-row .table-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.ops-row.is-priority{box-shadow:inset 4px 0 0 var(--red)}
+.ops-row.is-priority{background:#fff8f6}
+/* Every queue shares one set of columns across its rows (CSS subgrid): three content columns, then one
+   column per button slot (1 by default; .slots-2 or .slots-4 on the list. Not an inline style: the admin
+   page's Content-Security-Policy blocks style attributes). A row with fewer buttons leaves its slots
+   empty instead of pushing the other columns sideways, so columns and buttons line up down the list.
+   Buttons fill in order; a list whose optional buttons come first (payments) places them explicitly. */
+@media (min-width:1101px){
+  @supports (grid-template-columns:subgrid){
+    .ops-list{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) auto}
+    .ops-list.slots-2{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) repeat(2,auto)}
+    .ops-list.slots-4{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) repeat(4,auto)}
+    .ops-list>*{grid-column:1/-1}
+    .ops-list>.ops-row{grid-template-columns:subgrid;column-gap:8px}
+    .ops-list>.ops-row>:nth-child(-n+3){padding-inline-end:10px}
+    .ops-list>.ops-row>.table-actions{display:contents}
+    .ops-list>.ops-row>.table-actions>*{justify-self:stretch;text-align:center}
+    .ops-list .slot-receipt{grid-column:4}
+    .ops-list .slot-map{grid-column:5}
+    .ops-list .slot-verify{grid-column:6}
+    .ops-list .slot-reject{grid-column:7}
+  }
+}
+
 .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--soft);color:var(--muted)}
 .pill-green{background:var(--ops-green-soft);color:#2f5b23}
 .pill-amber{background:var(--ops-amber-soft);color:var(--ops-amber)}

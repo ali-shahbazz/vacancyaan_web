@@ -46,19 +46,15 @@
         $('seat-list').hidden = false;
         $('pack-note').textContent = data.package.credits + ' contacts shared by these roles · live for ' + data.package.visibility_days + ' days';
         $('pack-note').hidden = false;
-        $('intro-eyebrow').textContent = 'Several roles. One payment.';
         $('intro-title').textContent = 'Let’s get your roles ready.';
         $('intro-text').textContent = 'Transfer the pack fee once, then send the transaction ID. Kaam checks the transfer before every role goes live.';
-        $('foot-terms').textContent = 'Workers never pay · One payment for every role in the pack';
       } else if (data.invoice) {
         role.textContent = 'Monthly plan';
         $('invoice-kind').textContent = 'Monthly plan · ' + data.invoice.period_days + ' days';
         $('pack-note').textContent = data.invoice.credits + ' contacts shared by every branch · unused contacts end with the month';
         $('pack-note').hidden = false;
-        $('intro-eyebrow').textContent = 'Every branch. One plan.';
         $('intro-title').textContent = 'Let’s start your month.';
         $('intro-text').textContent = 'Transfer the monthly fee, then send the transaction ID. Kaam checks the transfer before the month starts.';
-        $('foot-terms').textContent = 'Workers never pay · One payment covers every branch this month';
       } else role.textContent = roles[subject.role] || subject.role;
       $('brand').replaceChildren(venue, document.createTextNode(' · '), role);
       for (const [id, value] of [['raast', data.raast_id], ['iban', data.iban]]) { $(id).textContent = value || 'Available nahi'; if (value) $(id).dataset.noTranslate = ''; document.querySelector('[data-copy="' + id + '"]').disabled = !value; }
