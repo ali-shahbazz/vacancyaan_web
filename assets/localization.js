@@ -72,9 +72,22 @@
     try { localStorage.setItem('kaam-ui-language', language); } catch {}
     window.dispatchEvent(new CustomEvent('kaam-language', {detail:language}));
   }
-  select.addEventListener('change', () => { language = select.value; apply(); });
+  // Marketing pages are written in English: an English visitor never downloads the catalog, and it loads
+  // the first time someone picks another language. Other pages translate server text, so they load it at once.
+  let loading = null;
+  const lazy = document.documentElement.hasAttribute('data-lazy-locales');
+  select.addEventListener('change', () => {
+    language = select.value;
+    if (lazy && !loading && language !== 'en') { select.disabled = true; load(); } else apply();
+  });
   window.kaamI18n = {translate, get language() { return language; }};
-  fetch('/assets/locales.json', {cache:'no-cache'}).then(response => {
+  if (lazy && language === 'en') {
+    select.disabled = false;
+    document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr';
+    return;
+  }
+  load();
+  function load() { if (loading) return loading; return loading = fetch('/assets/locales.json', {cache:'no-cache'}).then(response => {
     if (!response.ok) throw Error('Translations unavailable'); return response.json();
   }).then(data => {
     catalog = data.strings;
@@ -88,5 +101,5 @@
     select.disabled = false; apply();
     new MutationObserver(() => update(document.body)).observe(document.body, {subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['placeholder','aria-label','title']});
     new MutationObserver(updateTitle).observe(document.querySelector('title'), {subtree:true, childList:true, characterData:true});
-  }).catch(() => { language='en'; apply(); select.disabled=true; });
+  }).catch(() => { loading = null; language='en'; apply(); select.disabled=false; }); }
 })();

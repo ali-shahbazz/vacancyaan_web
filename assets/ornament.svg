@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg"><defs>
+<!-- The brand mark (docs/26-brand.md): green tile, lime stroke; reverse for dark grounds. -->
+<symbol id="mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#174e36"/><path d="M14 24l8 19 9-13 8 13 12-25" fill="none" stroke="#d7f597" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="mark-reverse" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#d7f597"/><path d="M14 24l8 19 9-13 8 13 12-25" fill="none" stroke="#174e36" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+
+<!-- Phool: the eight-petal flower painted at the corners of every truck panel. -->
+<symbol id="rosette" viewBox="0 0 48 48">
+  <g fill="#f2b21b">
+    <ellipse cx="24" cy="11" rx="4.6" ry="9"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(45 24 24)"/>
+    <ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(90 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(135 24 24)"/>
+    <ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(180 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(225 24 24)"/>
+    <ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(270 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(315 24 24)"/>
+  </g>
+  <g fill="#d9412b">
+    <ellipse cx="24" cy="13.5" rx="2" ry="4.4"/><ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(90 24 24)"/>
+    <ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(180 24 24)"/><ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(270 24 24)"/>
+  </g>
+  <circle cx="24" cy="24" r="6.2" fill="#d7f597"/><circle cx="24" cy="24" r="2.6" fill="#0e3b2a"/>
+</symbol>
+
+<!-- Chamak: a faceted mirror diamond. -->
+<symbol id="mirror" viewBox="0 0 24 24">
+  <path d="M12 1 23 12 12 23 1 12z" fill="#c9d3cd"/>
+  <path d="M12 1 12 12 1 12z" fill="#eef3f0"/><path d="M12 23 12 12 23 12z" fill="#8fa39a"/>
+  <path d="M12 6.5 17.5 12 12 17.5 6.5 12z" fill="none" stroke="#0e3b2a" stroke-opacity=".35" stroke-width=".8"/>
+</symbol>
+
+<!-- Step drawings for the hiring procession, painted in the panel's own hand: gold line, phool, mirror. -->
+<symbol id="v-post" viewBox="0 0 160 120">
+  <path d="M50 10v16M110 10v16" stroke="#f2b21b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4"/>
+  <path d="M28 34q8-10 16 0t16 0 16 0 16 0 16 0 16 0 16 0v52H28z" fill="#f2b21b"/>
+  <path d="M36 42h88v38H36z" fill="#0e3b2a"/>
+  <path d="M40 46h80v30H40z" fill="none" stroke="#d7f597" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <path d="M68 52h24v9H68zM70 61v10M90 61v10M68 52v-5h24v5" fill="none" stroke="#d7f597" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+  <use href="#rosette" x="18" y="24" width="22" height="22"/><use href="#rosette" x="120" y="24" width="22" height="22"/>
+  <use href="#mirror" x="72" y="92" width="16" height="16"/>
+</symbol>
+<symbol id="v-near" viewBox="0 0 160 120">
+  <circle cx="80" cy="62" r="46" fill="none" stroke="#f2b21b" stroke-width="1.6" stroke-dasharray="2 6"/>
+  <circle cx="80" cy="62" r="28" fill="none" stroke="#d7f597" stroke-width="1.6"/>
+  <path d="M80 26c-12 0-21 9-21 20 0 15 21 34 21 34s21-19 21-34c0-11-9-20-21-20z" fill="#d9412b" stroke="#f2b21b" stroke-width="2.5"/>
+  <use href="#rosette" x="68" y="34" width="24" height="24"/>
+  <use href="#mirror" x="26" y="70" width="16" height="16"/><use href="#mirror" x="120" y="44" width="16" height="16"/>
+  <use href="#mirror" x="106" y="94" width="13" height="13"/><use href="#mirror" x="38" y="30" width="13" height="13"/>
+</symbol>
+<symbol id="v-yes" viewBox="0 0 160 120">
+  <path d="M40 104V52a40 40 0 0 1 80 0v52z" fill="#0e3b2a" stroke="#f2b21b" stroke-width="3"/>
+  <path d="M48 100V53a32 32 0 0 1 64 0v47z" fill="none" stroke="#d7f597" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <circle cx="80" cy="64" r="20" fill="#d7f597"/>
+  <path d="m70 64 7 7 14-15" fill="none" stroke="#0e3b2a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <use href="#rosette" x="68" y="14" width="24" height="24"/>
+  <use href="#rosette" x="18" y="84" width="20" height="20"/><use href="#rosette" x="122" y="84" width="20" height="20"/>
+  <use href="#mirror" x="73" y="92" width="14" height="14"/>
+</symbol>
+<symbol id="v-call" viewBox="0 0 160 120">
+  <circle cx="80" cy="60" r="48" fill="none" stroke="#f2b21b" stroke-width="2.5"/>
+  <circle cx="80" cy="60" r="42" fill="#0e3b2a" stroke="#d7f597" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <!-- handset: the Material Design "call" glyph (Apache 2.0), painted marigold -->
+  <path transform="translate(47.6 27.6) scale(2.7)" fill="#f2b21b" d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/>
+  <path d="M88 30a20 20 0 0 1 18 18M86 40a10 10 0 0 1 9 9" fill="none" stroke="#d7f597" stroke-width="3.6" stroke-linecap="round"/>
+  <use href="#mirror" x="72" y="4" width="16" height="16"/><use href="#mirror" x="72" y="100" width="16" height="16"/>
+  <use href="#mirror" x="24" y="52" width="16" height="16"/><use href="#mirror" x="120" y="52" width="16" height="16"/>
+</symbol>
+</defs></svg>
