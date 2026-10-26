@@ -137,7 +137,8 @@ html[dir=rtl] .plaque:hover .icon{transform:scaleX(-1) translateX(3px)}
 .actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
 .hero-note{margin-top:22px;font-size:.95rem;color:var(--on-panel-muted);display:flex;gap:10px;align-items:center}
 .hero-note .icon{color:var(--lime)}
-.hero-urdu{margin:2px 0 0;text-align:center;font-size:clamp(1.5rem,2.2vw,2rem);color:var(--gold)}
+/* Nastaliq letters rise well above their line box, so the line keeps clear of the card's frame */
+.hero-urdu{margin:18px 0 0;text-align:center;font-size:clamp(1.5rem,2.2vw,2rem);color:var(--gold)}
 
 /* the example job: an arched medallion that turns over when the worker says yes */
 .medallion-wrap{perspective:1600px;justify-self:end;width:min(100%,430px)}
