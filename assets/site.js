@@ -27,6 +27,29 @@ const header = document.querySelector('.site-header');
 const onScroll = () => header?.classList.toggle('is-scrolled', scrollY > 8);
 addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
+// The header keeps everything on one row or steps down: first it drops the secondary "Find work"
+// link and tightens the links, then it switches to the menu. Longer labels (Roman Urdu) or a narrow
+// window step it down instead of wrapping or squeezing the links.
+const headerRow = header?.querySelector('.header-inner');
+function fitHeader() {
+  if (!headerRow) return;
+  header.classList.remove('is-tight', 'is-compact');
+  if (matchMedia('(max-width:900px)').matches) return; // the stylesheet already uses the menu here
+  const overflows = () => headerRow.scrollWidth > headerRow.clientWidth + 1;
+  if (overflows()) header.classList.add('is-tight');
+  if (overflows()) header.classList.add('is-compact');
+  if (!header.classList.contains('is-compact')) closeMenu();
+}
+let fitQueued = false;
+const queueFit = () => { if (!fitQueued) { fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitHeader(); }); } };
+if (headerRow) {
+  fitHeader();
+  new ResizeObserver(queueFit).observe(headerRow);
+  // a language change rewrites the labels in place
+  new MutationObserver(queueFit).observe(headerRow, { childList: true, characterData: true, subtree: true });
+  document.fonts?.ready.then(queueFit);
+}
+
 // Service status from the real health endpoint
 async function checkHealth() {
   const controls = [...document.querySelectorAll('[data-health]')];

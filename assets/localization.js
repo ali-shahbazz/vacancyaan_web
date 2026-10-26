@@ -55,7 +55,11 @@
   for (const [id, name] of [['en','English'], ['ur','اردو'], ['ur-Latn','Roman Urdu']]) {
     const option = document.createElement('option'); option.value = id; option.textContent = name; select.append(option);
   }
-  select.value = language; select.disabled = true; chooser.append(icon, select);
+  // A short name the site header shows on phones in place of the full one; the select stays over it.
+  const shortNames = {en: 'EN', ur: 'اردو', 'ur-Latn': 'Roman'};
+  const short = document.createElement('span'); short.className = 'language-short'; short.setAttribute('aria-hidden', 'true');
+  short.textContent = shortNames[language] || 'EN';
+  select.value = language; select.disabled = true; chooser.append(icon, short, select);
   const header = document.querySelector('.site-header .header-inner') || document.querySelector('.checkout-header')
     || document.querySelector('.workspace-topbar');
   (header || document.body).append(chooser);
@@ -68,6 +72,7 @@
   function apply() {
     document.documentElement.lang = language; document.documentElement.dir = language === 'ur' ? 'rtl' : 'ltr';
     select.value = language; select.setAttribute('aria-label', translate('Language'));
+    short.textContent = shortNames[language] || 'EN';
     update(document.body, true); updateTitle();
     try { localStorage.setItem('kaam-ui-language', language); } catch {}
     window.dispatchEvent(new CustomEvent('kaam-language', {detail:language}));

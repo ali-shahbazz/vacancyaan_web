@@ -47,10 +47,10 @@ html[lang=ur] .nastaliq{font-family:var(--nastaliq)!important}
   box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 18px 40px -24px rgba(0,0,0,.55);
   transition:min-height .4s var(--ease),background-color .4s,box-shadow .4s,border-color .4s}
 .site-header.is-scrolled .header-inner{min-height:54px;background:color-mix(in srgb,var(--panel-deep) 88%,transparent);border-color:rgba(242,178,27,.22);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 20px 44px -22px rgba(0,0,0,.7)}
-.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;letter-spacing:-.035em;font-size:1.0625rem;color:inherit;white-space:nowrap;padding-inline-end:8px}
-.brand svg{width:30px;height:30px}
+.brand{display:inline-flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none;font-weight:800;letter-spacing:-.035em;font-size:1.0625rem;color:inherit;white-space:nowrap;padding-inline-end:8px}
+.brand svg{width:30px;height:30px;flex-shrink:0}
 .site-nav{display:flex;align-items:center;gap:2px;margin-inline:auto}
-.site-nav>a{position:relative;padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.9375rem;color:var(--on-panel-muted);transition:color .25s}
+.site-nav>a{position:relative;white-space:nowrap;padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.9375rem;color:var(--on-panel-muted);transition:color .25s}
 .site-nav>a::after{content:"";position:absolute;inset-inline:12px;bottom:4px;height:2px;border-radius:2px;background:var(--lime);transform:scaleX(0);transform-origin:center;transition:transform .35s var(--ease)}
 .site-nav>a:hover{color:var(--on-panel)}
 .site-nav>a:hover::after{transform:scaleX(1)}
@@ -73,8 +73,20 @@ html[dir=rtl] .cta:hover .icon{transform:scaleX(-1) translateX(3px)}
 .site-header .language-control{order:2;gap:6px;height:40px;max-width:none;padding:0 10px;border:0;border-radius:10px;background:transparent;color:var(--on-panel-muted);font:600 .875rem/1 var(--body)}
 .site-header .language-control:hover{background:rgba(255,255,255,.06);color:var(--on-panel)}
 .site-header .language-control .icon{width:17px;height:17px}
-.site-header .language-control select{color:inherit;background-color:transparent;font:inherit;max-width:110px;field-sizing:content;min-height:36px;cursor:pointer}
+.site-header .language-control select{color:inherit;background-color:transparent;font:inherit;max-width:150px;field-sizing:content;min-height:36px;cursor:pointer}
 .site-header .language-control option{color:var(--ink)}
+.language-short{display:none}
+/* on phones the header names the language briefly; the select lies over it, so a tap opens the full list */
+@media (max-width:600px){
+  .site-header .language-control{position:relative}
+  .site-header .language-control .language-short{display:inline;color:var(--on-panel);font-weight:700}
+  .site-header .language-control select{position:absolute;inset:0;width:100%;max-width:none;opacity:0}
+  .site-header .language-control:focus-within{outline:2px solid var(--gold);outline-offset:2px}
+}
+@media (max-width:380px){
+  .site-header .language-control .language-short{display:none}
+  .site-header .language-control{padding:0 12px}
+}
 .menu-toggle{display:none;order:4;width:44px;height:44px;border:0;border-radius:12px;background:rgba(255,255,255,.06);color:var(--on-panel);align-items:center;justify-content:center;cursor:pointer}
 .menu-toggle .bars{position:relative;width:18px;height:12px;display:block}
 .menu-toggle .bars span{position:absolute;inset-inline:0;height:2px;border-radius:2px;background:currentColor;transition:transform .35s var(--ease),top .35s var(--ease)}
@@ -394,6 +406,9 @@ html[dir=rtl] .plaque:hover .icon{transform:scaleX(-1) translateX(3px)}
   .site-nav>a{padding:10px 9px}
   .header-link{display:none}
 }
+/* the same step wherever the full header does not fit (set by site.js) */
+.site-header.is-tight .site-nav>a{padding:10px 9px}
+.site-header.is-tight .header-link{display:none}
 @media (max-width:900px){
   .site-header .header-inner{flex-wrap:nowrap;padding-inline:14px 6px}
   .site-header .language-control{margin-inline-start:auto}
@@ -408,9 +423,22 @@ html[dir=rtl] .plaque:hover .icon{transform:scaleX(-1) translateX(3px)}
   .nav-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--on-panel-line)}
   .nav-actions .cta{justify-content:center;min-height:48px}
 }
+/* the same menu layout wherever the full header does not fit on one row, as in Roman Urdu (set by site.js) */
+.site-header.is-compact .header-inner{flex-wrap:nowrap;padding-inline:14px 6px}
+.site-header.is-compact .language-control{margin-inline-start:auto}
+.site-header.is-compact .header-actions{display:none}
+.site-header.is-compact .menu-toggle{display:inline-flex}
+.site-header.is-compact .site-nav{position:absolute;top:calc(100% + 8px);inset-inline:0;display:none;flex-direction:column;align-items:stretch;gap:0;margin:0;padding:8px;border-radius:18px;
+    background:var(--panel-deep);border:1px solid rgba(215,245,151,.12);box-shadow:0 24px 50px -20px rgba(0,0,0,.7)}
+.site-header.is-compact .site-nav.is-open{display:flex;animation:menu-in .35s var(--ease)}
+.site-header.is-compact .site-nav>a{padding:14px 12px;font-size:1.0625rem;color:var(--on-panel);border-radius:12px}
+.site-header.is-compact .site-nav>a::after{display:none}
+.site-header.is-compact .site-nav>a:hover,.site-header.is-compact .site-nav>a[aria-current=page]{background:rgba(255,255,255,.06)}
+.site-header.is-compact .nav-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--on-panel-line)}
+.site-header.is-compact .nav-actions .cta{justify-content:center;min-height:48px}
+
 @keyframes menu-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media (max-width:420px){
-  .site-header .language-control .icon{display:none}
   .brand{font-size:1rem}
   .brand svg{width:28px;height:28px}
 }

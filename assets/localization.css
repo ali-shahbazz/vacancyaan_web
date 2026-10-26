@@ -13,3 +13,4 @@ html[dir=rtl] .workspace-main{margin-left:0;margin-right:232px}
 @media(max-width:850px){html[dir=rtl] .workspace-main{margin-right:180px}}
 @media(max-width:680px){html[dir=rtl] .workspace-main{margin-right:0}html[dir=rtl] .workspace-sidebar{border-left:0}.workspace-topbar{flex-wrap:wrap;height:auto;min-height:68px;padding-block:12px}.site-header{height:auto;min-height:76px}.header-inner{flex-wrap:wrap;padding-block:16px;gap:12px}.header-inner .language-control{margin-inline-start:auto}}
 @media(max-width:600px){.language-control{font-size:12px;padding:4px 6px;gap:3px;max-width:148px}.language-control span{display:none}.site-header .language-control{margin-inline-start:auto}.checkout-header{flex-wrap:wrap;gap:12px}.checkout-header .tag{display:none}}
+.language-short{display:none}
