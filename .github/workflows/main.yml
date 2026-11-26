@@ -1,0 +1,38 @@
+name: Sync to Personal Repo
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout org repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up SSH for syncing
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SYNC_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Add personal repo remote
+        run: |
+          git remote add personal git@github.com:Turab611/vacancyaan_landing_vercel.git
+      - name: Push main branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git push personal main --force
+      - name: Push dev branch
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          git push personal dev --force
