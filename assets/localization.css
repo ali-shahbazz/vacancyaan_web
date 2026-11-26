@@ -1,5 +1,5 @@
 @font-face{font-family:NotoSansArabic;src:url('/assets/fonts/noto-sans-arabic.woff2') format('woff2');font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F}
-.language-control{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;padding:7px 10px;border:1px solid var(--line,#d8e1d5);border-radius:12px;background:#fff;color:#174e36;font:13px 'DM Sans',sans-serif;max-width:180px}
+.language-control{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;padding:7px 10px;border:1px solid var(--line,#d8e1d5);border-radius:12px;background:#fff;color:#1b2559;font:13px 'DM Sans',sans-serif;max-width:180px}
 .language-control select{border:0;outline-offset:4px;background-color:transparent;background-position:right 2px center;padding-block:0;padding-inline-start:0;padding-inline-end:24px;color:inherit;font:inherit;max-width:140px;min-height:30px;cursor:pointer}
 html[dir=rtl] .language-control select{background-position:left 2px center}
 .language-control .icon{width:18px;height:18px}

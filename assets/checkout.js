@@ -14,7 +14,7 @@
   async function loadInvoice() {
     $('retry-invoice').disabled = true; $('invoice-error').hidden = true; $('checkout-fields').hidden = true; $('invoice').setAttribute('aria-busy', 'true'); $('invoice-state').textContent = 'Loading invoice';
     try {
-      if (!token) throw new Error('Checkout link mukammal nahi hai. Work Pakistan app se adaigi ka naya link kholein.');
+      if (!token) throw new Error('Checkout link mukammal nahi hai. Vacancyaan app se adaigi ka naya link kholein.');
       let requestedReturn = params.get('return_to');
       if (!requestedReturn && document.referrer) {
         try { requestedReturn = new URL(document.referrer).origin + '/'; } catch { /* Use the server home fallback. */ }
@@ -23,9 +23,9 @@
       if (requestedReturn) query.set('return_to', requestedReturn);
       const response = await fetch('/api/payments/checkout/' + (kind === 'job' ? '' : kind + '/') + encodeURIComponent(targetId) + '?' + query, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
       const data = await response.json();
-      if (!response.ok || data.code) throw new Error(data.code === 'ERR_SESSION_DEAD' ? 'Link purana ho gaya hai. Work Pakistan app mein Adaigi karein par tap kar ke naya link kholein.' : data.sentence || 'Link expire ho gaya hai. Work Pakistan app se naya adaigi link kholein.');
+      if (!response.ok || data.code) throw new Error(data.code === 'ERR_SESSION_DEAD' ? 'Link purana ho gaya hai. Vacancyaan app mein Adaigi karein par tap kar ke naya link kholein.' : data.sentence || 'Link expire ho gaya hai. Vacancyaan app se naya adaigi link kholein.');
       const subject = data.job || data.package || data.invoice;
-      if (!subject || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Work Pakistan app se naya link kholein.');
+      if (!subject || !Number.isFinite(Number(data.amount_pkr)) || Number(data.amount_pkr) <= 0 || (!data.raast_id && !data.iban)) throw new Error('Invoice nahi mil saki. Vacancyaan app se naya link kholein.');
       amount = Number(data.amount_pkr);
       returnTarget = data.return_to || '/';
       const roles = { FAST_FOOD_COOK: 'Fast food cook', CONTINENTAL_COOK: 'Line cook', TANDOORCHI: 'Tandoorchi', WAITER: 'Waiter', DISHWASHER: 'Dishwasher', BARISTA: 'Barista', HELPER: 'Helper', CASHIER: 'Cashier', SHELF_PACKER: 'Shelf packer', LOADER: 'Loader', DELIVERY_RIDER: 'Delivery rider', PHARMACY_ASSISTANT: 'Pharmacy assistant' };
@@ -47,20 +47,20 @@
         $('pack-note').textContent = data.package.credits + ' contacts shared by these roles · live for ' + data.package.visibility_days + ' days';
         $('pack-note').hidden = false;
         $('intro-title').textContent = 'Let’s get your roles ready.';
-        $('intro-text').textContent = 'Transfer the pack fee once, then send the transaction ID. Work Pakistan checks the transfer before every role goes live.';
+        $('intro-text').textContent = 'Transfer the pack fee once, then send the transaction ID. Vacancyaan checks the transfer before every role goes live.';
       } else if (data.invoice) {
         role.textContent = 'Monthly plan';
         $('invoice-kind').textContent = 'Monthly plan · ' + data.invoice.period_days + ' days';
         $('pack-note').textContent = data.invoice.credits + ' contacts shared by every branch · unused contacts end with the month';
         $('pack-note').hidden = false;
         $('intro-title').textContent = 'Let’s start your month.';
-        $('intro-text').textContent = 'Transfer the monthly fee, then send the transaction ID. Work Pakistan checks the transfer before the month starts.';
+        $('intro-text').textContent = 'Transfer the monthly fee, then send the transaction ID. Vacancyaan checks the transfer before the month starts.';
       } else role.textContent = roles[subject.role] || subject.role;
       $('brand').replaceChildren(venue, document.createTextNode(' · '), role);
       for (const [id, value] of [['raast', data.raast_id], ['iban', data.iban]]) { $(id).textContent = value || 'Available nahi'; if (value) $(id).dataset.noTranslate = ''; document.querySelector('[data-copy="' + id + '"]').disabled = !value; }
       $('invoice-state').textContent = 'Awaiting transfer'; $('checkout-fields').hidden = false;
     } catch (error) {
-      amount = undefined; $('invoice-state').textContent = 'Invoice unavailable'; $('brand').textContent = 'Work Pakistan app se apni job ka checkout kholein.'; $('amount').textContent = '—';
+      amount = undefined; $('invoice-state').textContent = 'Invoice unavailable'; $('brand').textContent = 'Vacancyaan app se apni job ka checkout kholein.'; $('amount').textContent = '—';
       $('invoice-error-text').textContent = humanError(error); $('invoice-error').hidden = false; $('retry-invoice').hidden = !token;
     } finally { $('invoice').setAttribute('aria-busy', 'false'); $('retry-invoice').disabled = false; }
   }

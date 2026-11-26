@@ -1,4 +1,4 @@
-// Work Pakistan public site: navigation, service status, and the page's one authored motion — the
+// Vacancyaan public site: navigation, service status, and the page's one authored motion — the
 // example job turning over when the worker says yes, and the hiring steps lighting in order.
 document.documentElement.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
