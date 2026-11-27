@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Source for /assets/og/vacancyaan-og.png (1200x630). Render with any headless Chrome at 1200x630. -->
+<style>
+@font-face{font-family:Ibrand;src:url('../assets/fonts/ibrand.woff2') format('woff2')}
+@font-face{font-family:Manrope;src:url('../assets/fonts/manrope.woff2') format('woff2');font-weight:200 800}
+@font-face{font-family:Nastaliq;src:url('../assets/fonts/noto-nastaliq-urdu-700.woff2') format('woff2');font-weight:700}
+*{margin:0;box-sizing:border-box}
+html,body{width:1200px;height:630px;overflow:hidden;background:#111843}
+.panel{position:absolute;inset:28px 28px 0;background:#1b2559;border-radius:56px 56px 0 0;overflow:hidden}
+.frame{position:absolute;inset:18px 18px 44px;border:2px solid #f4a616;border-radius:42px 42px 8px 8px}
+.frame::before{content:"";position:absolute;inset:9px;border:1px dashed rgba(169,180,238,.45);border-radius:34px 34px 4px 4px}
+.strip{position:absolute;left:70px;right:70px;top:40px;height:16px;background:url('../assets/phool-strip.svg') repeat-x center/48px 16px;opacity:.9}
+.tape{position:absolute;left:0;right:0;bottom:0;height:26px;background:repeating-linear-gradient(135deg,#b4462f 0 20px,#f4a616 20px 40px)}
+.body{position:absolute;inset:0 0 26px;display:grid;grid-template-columns:1fr 280px;align-items:center;padding:60px 96px 48px 92px;gap:24px}
+.logo{height:40px;display:block;margin-bottom:34px}
+h1{font:400 62px/1.04 Ibrand,sans-serif;color:#fbf7ef;letter-spacing:-.006em}
+h1 span{display:block}
+h1 .gold{color:#f4a616}
+.foot{margin-top:30px;display:flex;align-items:center;gap:18px;font:600 21px/1 Manrope,sans-serif;color:#c9cee6;letter-spacing:.01em}
+.foot i{width:7px;height:7px;border-radius:50%;background:#f4a616;display:inline-block}
+.medal{position:relative;width:280px;height:280px;display:grid;place-items:center}
+.ring{position:absolute;inset:0;border-radius:50%;border:2px solid #f4a616}
+.ring::before{content:"";position:absolute;inset:12px;border-radius:50%;border:1px dashed rgba(169,180,238,.5)}
+.ring::after{content:"";position:absolute;inset:34px;border-radius:50%;background:#111843}
+.medal svg.rose{position:relative;width:156px;height:156px}
+.mir{position:absolute;width:26px;height:26px}
+.mir.t{top:-13px;left:127px}.mir.b{bottom:-13px;left:127px}.mir.l{left:-13px;top:127px}.mir.r{right:-13px;top:127px}
+.urdu{position:absolute;bottom:-62px;left:0;right:0;text-align:center;font:700 25px/1.9 Nastaliq,serif;color:#c9cee6;direction:rtl}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="rosette" viewBox="0 0 48 48"><g fill="#f4a616"><ellipse cx="24" cy="11" rx="4.6" ry="9"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(45 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(90 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(135 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(180 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(225 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(270 24 24)"/><ellipse cx="24" cy="11" rx="4.6" ry="9" transform="rotate(315 24 24)"/></g><g fill="#b4462f"><ellipse cx="24" cy="13.5" rx="2" ry="4.4"/><ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(90 24 24)"/><ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(180 24 24)"/><ellipse cx="24" cy="13.5" rx="2" ry="4.4" transform="rotate(270 24 24)"/></g><circle cx="24" cy="24" r="6.2" fill="#f4a616"/><circle cx="24" cy="24" r="2.6" fill="#1b2559"/></symbol>
+<symbol id="mirror" viewBox="0 0 24 24"><path d="M12 1 23 12 12 23 1 12z" fill="#c9cee6"/><path d="M12 1 12 12 1 12z" fill="#f1f2f9"/><path d="M12 23 12 12 23 12z" fill="#8f97bd"/><path d="M12 6.5 17.5 12 12 17.5 6.5 12z" fill="none" stroke="#1b2559" stroke-opacity=".35" stroke-width=".8"/></symbol>
+</defs></svg>
+<div class="panel">
+  <div class="frame"></div><div class="strip"></div><div class="tape"></div>
+  <div class="body">
+    <div>
+      <img class="logo" src="../assets/brand/logo.svg" alt="">
+      <h1><span>One seat.</span><span>One clear salary.</span><span class="gold">One yes before the call.</span></h1>
+      <p class="foot">Hire staff <i></i> Find work near home <i></i> Free for workers</p>
+    </div>
+    <div class="medal">
+      <div class="ring"></div>
+      <svg class="rose"><use href="#rosette"/></svg>
+      <svg class="mir t"><use href="#mirror"/></svg><svg class="mir b"><use href="#mirror"/></svg><svg class="mir l"><use href="#mirror"/></svg><svg class="mir r"><use href="#mirror"/></svg>
+    </div>
+  </div>
+</div>
+</body></html>
