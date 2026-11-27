@@ -1,7 +1,14 @@
 name: Sync to Personal Repo
 
+# Copies this website repo to personal mirrors on every push to main or dev.
+# Each mirror uses its own SSH deploy key (GitHub allows a deploy key on one repo only):
+#   SYNC_SSH_KEY      -> Turab611/vacancyaan_landing_vercel
+#   SYNC_SSH_KEY_ALI  -> ali-shahbazz/vacancyaan_web
+# A mirror whose secret is not set is skipped. The source of this file is
+# apps/web/.github/workflows/main.yml in Cresra/work-pakistan.
+
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
@@ -11,28 +18,36 @@ on:
 
 jobs:
   sync:
+    # Only the org repo syncs; the mirrors carry this file but must not run it.
+    if: github.repository == 'Cresra/vacancyaan_web'
     runs-on: ubuntu-latest
+    env:
+      KEY_TURAB: ${{ secrets.SYNC_SSH_KEY }}
+      KEY_ALI: ${{ secrets.SYNC_SSH_KEY_ALI }}
 
     steps:
       - name: Checkout org repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up SSH for syncing
+      - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SYNC_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-      - name: Add personal repo remote
+
+      - name: Sync to Turab611/vacancyaan_landing_vercel
+        if: env.KEY_TURAB != ''
         run: |
-          git remote add personal git@github.com:Turab611/vacancyaan_landing_vercel.git
-      - name: Push main branch
-        if: github.ref == 'refs/heads/main'
+          printf '%s\n' "$KEY_TURAB" > ~/.ssh/turab_key
+          chmod 600 ~/.ssh/turab_key
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/turab_key -o IdentitiesOnly=yes"
+          git push --force git@github.com:Turab611/vacancyaan_landing_vercel.git "HEAD:${GITHUB_REF}"
+
+      - name: Sync to ali-shahbazz/vacancyaan_web
+        if: env.KEY_ALI != ''
         run: |
-          git push personal main --force
-      - name: Push dev branch
-        if: github.ref == 'refs/heads/dev'
-        run: |
-          git push personal dev --force
+          printf '%s\n' "$KEY_ALI" > ~/.ssh/ali_key
+          chmod 600 ~/.ssh/ali_key
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/ali_key -o IdentitiesOnly=yes"
+          git push --force git@github.com:ali-shahbazz/vacancyaan_web.git "HEAD:${GITHUB_REF}"
